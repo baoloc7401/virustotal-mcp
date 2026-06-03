@@ -1,0 +1,32 @@
+{
+  // Use the workspace TypeScript so editor types match `tsc` builds.
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // Format + lint on save with ESLint (flat config).
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.useFlatConfig": true,
+  "eslint.validate": ["javascript", "typescript"],
+
+  // Keep line endings and whitespace consistent across machines.
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+
+  // Hide build artefacts from the explorer / search.
+  "search.exclude": {
+    "**/dist": true,
+    "**/coverage": true,
+    "**/node_modules": true
+  },
+  "files.watcherExclude": {
+    "**/dist/**": true,
+    "**/coverage/**": true,
+    "**/node_modules/**": true
+  }
+}
