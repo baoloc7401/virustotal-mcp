@@ -61,7 +61,18 @@ Then start a session and ask, e.g. *"Check this hash on VirusTotal: <sha256>"*.
 
 ```bash
 npm run dev      # run from source with tsx (set VT_API_KEY in your env)
+npm run lint     # ESLint (flat config); npm run lint:fix to autofix
+npm test         # run the Vitest unit suite
+npm run coverage # run tests and enforce 100% coverage
 ```
+
+### Tests
+
+Unit tests live in [`test/`](test/) and run under [Vitest](https://vitest.dev). They
+mock `fetch` and the filesystem, so **no network access or API key is required**.
+Coverage is gated at **100%** (lines, branches, functions, statements) in
+[`vitest.config.ts`](vitest.config.ts) — if you change behaviour, update the tests so
+the suite passes and coverage stays at 100%.
 
 Inspect tools interactively without Claude:
 
