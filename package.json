@@ -1,0 +1,37 @@
+{
+  "name": "virustotal-mcp",
+  "version": "0.1.0",
+  "description": "MCP server exposing VirusTotal lookups and scan submissions for Claude Code",
+  "type": "module",
+  "bin": {
+    "virustotal-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "virustotal",
+    "claude",
+    "security"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
