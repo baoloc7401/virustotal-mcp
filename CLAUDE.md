@@ -14,6 +14,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Always run `npm run lint` before considering any task done** — it must pass clean.
 - **You may `git commit` (no co-authoring), but do not `git push`** unless explicitly asked.
+- **Commit messages use Conventional Commits:** `<type>: <msg>` where type is one of
+  `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `build` (e.g. `feat: add scan_url tool`).
 
 There is no test runner configured. Verify changes two ways:
 
