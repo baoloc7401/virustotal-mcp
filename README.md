@@ -17,11 +17,14 @@ into clear messages instead of crashing.
 | `get_ip_report` | Look up an IP address's reputation and AS owner |
 | `scan_url` | Submit a URL for a fresh scan (waits for the verdict by default) |
 | `scan_file` | Upload a local file (≤ 32 MB) for scanning |
+| `rescan_file` | Re-trigger analysis of an already-seen file by hash (no re-upload) |
 | `get_analysis` | Fetch the result of a prior submission by analysis id |
 
-Each tool returns a compact summary — detection counts (e.g. `12/70 engines flagged
-malicious`), reputation, notable engine verdicts, and a VirusTotal permalink — rather
-than the full API JSON, to keep responses small.
+Each tool returns a compact text summary — detection counts (e.g. `12/70 engines
+flagged malicious`), reputation, notable engine verdicts, last-analysis date, and a
+VirusTotal permalink — rather than the full API JSON, to keep responses small. The
+same fields are also returned as MCP `structuredContent` (against each tool's
+`outputSchema`) so clients can consume verdicts programmatically.
 
 ## Setup
 
@@ -56,6 +59,19 @@ user config):
 ```
 
 Then start a session and ask, e.g. *"Check this hash on VirusTotal: <sha256>"*.
+
+## Configuration
+
+Only `VT_API_KEY` is required. The throttle and polling behaviour can be tuned with
+optional env vars (sensible free-tier defaults shown):
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `VT_MIN_REQUEST_INTERVAL_MS` | `15000` | Min spacing between API requests (4/min free-tier ceiling). Lower it on a paid plan. |
+| `VT_MAX_RETRIES` | `2` | Times to retry a rate-limited (429) request, honouring `Retry-After`. |
+| `VT_ANALYSIS_MAX_ATTEMPTS` | `10` | Max polls of `/analyses/{id}` while waiting for a scan verdict. |
+| `VT_ANALYSIS_POLL_MS` | `3000` | Initial delay between analysis polls (backs off 1.5× up to the cap). |
+| `VT_ANALYSIS_POLL_CAP_MS` | `15000` | Backoff cap for analysis polling. |
 
 ## Development
 

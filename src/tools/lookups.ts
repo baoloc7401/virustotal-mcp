@@ -3,8 +3,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { vtGet, urlId } from "../vtClient.js";
-import { toolResult, errorResult } from "./helpers.js";
+import { toolResult, errorResult, summaryOutputSchema } from "./helpers.js";
 import { formatFileReport, formatUrlReport, formatDomainReport, formatIpReport } from "../format.js";
+import type { FileAttributes, UrlAttributes, DomainAttributes, IpAttributes, VtResponse } from "../vtTypes.js";
 
 export function registerLookupTools(server: McpServer): void {
   server.registerTool(
@@ -20,11 +21,13 @@ export function registerLookupTools(server: McpServer): void {
           .regex(/^[a-fA-F0-9]{32}$|^[a-fA-F0-9]{40}$|^[a-fA-F0-9]{64}$/, "Must be an MD5, SHA-1, or SHA-256 hex hash")
           .describe("File hash: MD5 (32), SHA-1 (40), or SHA-256 (64) hex characters"),
       },
+      outputSchema: summaryOutputSchema,
     },
     async ({ hash }) => {
       try {
-        const data = await vtGet(`/files/${hash}`);
-        return toolResult(formatFileReport(data));
+        const data = await vtGet<VtResponse<FileAttributes>>(`/files/${hash}`);
+        const { text, structured } = formatFileReport(data);
+        return toolResult(text, structured);
       } catch (err) {
         return errorResult(err);
       }
@@ -41,11 +44,13 @@ export function registerLookupTools(server: McpServer): void {
       inputSchema: {
         url: z.string().url().describe("The full URL to look up (e.g. https://example.com/path)"),
       },
+      outputSchema: summaryOutputSchema,
     },
     async ({ url }) => {
       try {
-        const data = await vtGet(`/urls/${urlId(url)}`);
-        return toolResult(formatUrlReport(data));
+        const data = await vtGet<VtResponse<UrlAttributes>>(`/urls/${urlId(url)}`);
+        const { text, structured } = formatUrlReport(data);
+        return toolResult(text, structured);
       } catch (err) {
         return errorResult(err);
       }
@@ -61,11 +66,13 @@ export function registerLookupTools(server: McpServer): void {
       inputSchema: {
         domain: z.string().min(1).describe("Domain name, e.g. example.com"),
       },
+      outputSchema: summaryOutputSchema,
     },
     async ({ domain }) => {
       try {
-        const data = await vtGet(`/domains/${encodeURIComponent(domain)}`);
-        return toolResult(formatDomainReport(data));
+        const data = await vtGet<VtResponse<DomainAttributes>>(`/domains/${encodeURIComponent(domain)}`);
+        const { text, structured } = formatDomainReport(data);
+        return toolResult(text, structured);
       } catch (err) {
         return errorResult(err);
       }
@@ -81,11 +88,13 @@ export function registerLookupTools(server: McpServer): void {
       inputSchema: {
         ip: z.string().min(1).describe("IPv4 or IPv6 address, e.g. 8.8.8.8"),
       },
+      outputSchema: summaryOutputSchema,
     },
     async ({ ip }) => {
       try {
-        const data = await vtGet(`/ip_addresses/${encodeURIComponent(ip)}`);
-        return toolResult(formatIpReport(data));
+        const data = await vtGet<VtResponse<IpAttributes>>(`/ip_addresses/${encodeURIComponent(ip)}`);
+        const { text, structured } = formatIpReport(data);
+        return toolResult(text, structured);
       } catch (err) {
         return errorResult(err);
       }

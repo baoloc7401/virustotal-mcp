@@ -7,6 +7,7 @@ vi.mock("@modelcontextprotocol/sdk/server/stdio.js", () => ({
 
 beforeEach(() => {
   vi.resetModules();
+  process.env.VT_API_KEY = "test-key";
 });
 
 afterEach(() => {
@@ -24,6 +25,18 @@ describe("index entry point", () => {
 
     await vi.waitFor(() => expect(connect).toHaveBeenCalledTimes(1));
     expect(errSpy).toHaveBeenCalledWith("virustotal-mcp server running on stdio");
+  });
+
+  it("warns on stderr when VT_API_KEY is missing", async () => {
+    delete process.env.VT_API_KEY;
+    const connect = vi.fn().mockResolvedValue(undefined);
+    vi.doMock("../src/server.js", () => ({ createServer: () => ({ connect }) }));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await import("../src/index.js");
+
+    await vi.waitFor(() => expect(connect).toHaveBeenCalledTimes(1));
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("VT_API_KEY is not set"));
   });
 
   it("logs and exits(1) when startup fails", async () => {

@@ -6,6 +6,11 @@ describe("toolResult", () => {
   it("wraps text in a content array", () => {
     expect(toolResult("hi")).toEqual({ content: [{ type: "text", text: "hi" }] });
   });
+
+  it("attaches structuredContent when provided", () => {
+    const r = toolResult("hi", { reputation: 5 });
+    expect(r.structuredContent).toEqual({ reputation: 5 });
+  });
 });
 
 describe("errorResult", () => {

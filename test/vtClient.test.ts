@@ -1,11 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { VtError, vtGet, vtPostForm, vtPostMultipart, urlId, VT_BASE } from "../src/vtClient.js";
 
-/** Build a minimal Response-like stub. */
-function res(opts: { ok?: boolean; status?: number; json?: () => Promise<unknown> }): Response {
+/** Build a minimal Response-like stub (incl. a headers.get for Retry-After). */
+function res(opts: {
+  ok?: boolean;
+  status?: number;
+  retryAfter?: string;
+  json?: () => Promise<unknown>;
+}): Response {
   return {
     ok: opts.ok ?? true,
     status: opts.status ?? 200,
+    headers: { get: (name: string) => (name === "retry-after" ? (opts.retryAfter ?? null) : null) },
     json: opts.json ?? (() => Promise.resolve({})),
   } as unknown as Response;
 }
@@ -23,6 +29,9 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   process.env.VT_API_KEY = "test-key";
+  // Keep most tests fast and deterministic: short spacing, no retries.
+  process.env.VT_MIN_REQUEST_INTERVAL_MS = "1000";
+  process.env.VT_MAX_RETRIES = "0";
 });
 
 afterEach(() => {
@@ -111,7 +120,7 @@ describe("vtPostMultipart", () => {
 });
 
 describe("throttle", () => {
-  it("waits MIN_REQUEST_INTERVAL_MS between back-to-back requests", async () => {
+  it("waits the configured interval between back-to-back requests", async () => {
     fetchMock.mockResolvedValue(res({ json: () => Promise.resolve({}) }));
     await vtGet("/first");
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -124,6 +133,65 @@ describe("throttle", () => {
     await vi.advanceTimersByTimeAsync(1_000);
     await second;
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["unset", undefined],
+    ["empty", ""],
+    ["non-numeric", "abc"],
+    ["negative", "-100"],
+  ])("falls back to the 15s default when the interval is %s", async (_label, value) => {
+    if (value === undefined) delete process.env.VT_MIN_REQUEST_INTERVAL_MS;
+    else process.env.VT_MIN_REQUEST_INTERVAL_MS = value;
+    fetchMock.mockResolvedValue(res({ json: () => Promise.resolve({}) }));
+
+    await vtGet("/first");
+    const second = vtGet("/second");
+    await Promise.resolve();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(15_000);
+    await second;
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("429 retry", () => {
+  it("retries with backoff (no Retry-After header) then succeeds", async () => {
+    process.env.VT_MAX_RETRIES = "2";
+    fetchMock
+      .mockResolvedValueOnce(res({ ok: false, status: 429 }))
+      .mockResolvedValueOnce(res({ json: () => Promise.resolve({ ok: 1 }) }));
+
+    const p = vtGet("/x");
+    await vi.advanceTimersByTimeAsync(1_000); // RETRY_BASE_MS * 2^0
+    await expect(p).resolves.toEqual({ ok: 1 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("honours a numeric Retry-After header", async () => {
+    process.env.VT_MAX_RETRIES = "1";
+    process.env.VT_MIN_REQUEST_INTERVAL_MS = "0";
+    fetchMock
+      .mockResolvedValueOnce(res({ ok: false, status: 429, retryAfter: "2" }))
+      .mockResolvedValueOnce(res({ json: () => Promise.resolve({ ok: 2 }) }));
+
+    const p = vtGet("/x");
+    await vi.advanceTimersByTimeAsync(2_000);
+    await expect(p).resolves.toEqual({ ok: 2 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up and throws once retries are exhausted", async () => {
+    process.env.VT_MAX_RETRIES = "1";
+    process.env.VT_MIN_REQUEST_INTERVAL_MS = "0";
+    fetchMock.mockResolvedValue(res({ ok: false, status: 429 }));
+
+    const p = vtGet("/x").catch((e) => e);
+    await vi.advanceTimersByTimeAsync(5_000);
+    const err = await p;
+    expect(err).toMatchObject({ status: 429 });
+    expect(fetchMock).toHaveBeenCalledTimes(2); // initial attempt + one retry
   });
 });
 

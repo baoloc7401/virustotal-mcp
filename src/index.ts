@@ -5,6 +5,14 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { createServer } from "./server.js";
 
 async function main(): Promise<void> {
+  // Fail loud and early (on stderr) when misconfigured, instead of only when the
+  // first tool call hits VirusTotal. The server still starts so tools/list works.
+  if (!process.env.VT_API_KEY) {
+    console.error(
+      "Warning: VT_API_KEY is not set — VirusTotal tool calls will fail until it is configured " +
+        "(get a free key at https://www.virustotal.com/gui/my-apikey).",
+    );
+  }
   const server = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);

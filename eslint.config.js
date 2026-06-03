@@ -19,9 +19,9 @@ export default tseslint.config(
       },
     },
     rules: {
-      // VirusTotal v3 responses are large, loosely-typed JSON we deliberately
-      // navigate with `any` in vtClient/format rather than modeling every field.
-      "@typescript-eslint/no-explicit-any": "off",
+      // VT responses are modeled with partial interfaces in `vtTypes.ts`; keep
+      // new `any` out so field-name drift surfaces at compile time.
+      "@typescript-eslint/no-explicit-any": "error",
     },
   },
 );
