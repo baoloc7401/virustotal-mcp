@@ -19,6 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **You may `git commit` (no co-authoring), but do not `git push`** unless explicitly asked.
 - **Commit messages use Conventional Commits:** `<type>: <msg>` where type is one of
   `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `build` (e.g. `feat: add scan_url tool`).
+- **Permissions** are pre-approved in `.claude/settings.json`: the build/lint/test scripts, read-only git, and `git commit`. Server-start commands (`npm run dev`, `npm start`) are intentionally left out — the user runs the server themselves. `.env` reads and `git push` are denied; personal overrides go in `.claude/settings.local.json` (gitignored).
 
 Unit tests run under Vitest (`npm test`); they mock `fetch` and `node:fs/promises`, so no network or API key is needed. For end-to-end confidence, also verify changes two ways:
 
